@@ -259,6 +259,10 @@
         ← Voltar ao WorkSwipe
     </a>
     
+    <a href="manage-premium.html" class="manage-link" style="position: absolute; top: 1rem; right: 1rem; color: #3498db; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 0.5rem; background: white; padding: 0.5rem 1rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        Gerenciar Plano →
+    </a>
+    
     <div class="premium-page">
         <div class="premium-header">
             <h1>WorkSwipe Premium</h1>
@@ -434,8 +438,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             checkPremiumStatus();
             
-            // Inicializar MercadoPago em background
-            mercadoPagoPayments.initialize().catch(console.error);
+            // MercadoPago será inicializado apenas quando necessário (ao selecionar plano)
         });
     </script>
 </body>

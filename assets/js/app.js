@@ -167,7 +167,13 @@ if (logoutBtn) logoutBtn.addEventListener('click', logout);
   // Função para verificar status premium via MercadoPago
   function checkPremiumStatus() {
     try {
-      return mercadoPagoPayments.isPremiumActive();
+      // Verificar se o MercadoPago está inicializado antes de usar
+      if (mercadoPagoPayments && mercadoPagoPayments.initialized) {
+        return mercadoPagoPayments.isPremiumActive();
+      } else {
+        // Se não estiver inicializado, usar o sistema local
+        return premium;
+      }
     } catch (error) {
       console.error('Erro ao verificar premium:', error);
       return premium; // fallback para o sistema antigo

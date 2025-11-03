@@ -59,8 +59,9 @@ class MercadoPagoPayments {
     async initialize() {
         try {
             // Verificar se a chave pública está configurada
-            if (MERCADOPAGO_CONFIG.publicKey === 'TEST-ed96bf65-751d-440f-a105-625be4fe4c29') {
-                throw new Error('Chave pública do MercadoPago não configurada');
+            if (!MERCADOPAGO_CONFIG.publicKey || MERCADOPAGO_CONFIG.publicKey === 'TEST-your-public-key-here') {
+                console.warn('MercadoPago: Chave pública não configurada - modo demonstração ativo');
+                return false;
             }
 
             // Carregar o SDK do MercadoPago via CDN
@@ -73,7 +74,7 @@ class MercadoPagoPayments {
             console.log('MercadoPago inicializado com sucesso');
             return true;
         } catch (error) {
-            console.error('Erro ao inicializar MercadoPago:', error);
+            console.warn('MercadoPago não pôde ser inicializado:', error.message);
             return false;
         }
     }
@@ -107,36 +108,27 @@ class MercadoPagoPayments {
             // Dados do usuário atual
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
             
-            // Criar preferência de pagamento
-            const preference = {
-                items: [{
-                    id: plan.id,
-                    title: plan.title,
-                    description: plan.description,
-                    quantity: 1,
-                    currency_id: plan.currency,
-                    unit_price: plan.price
-                }],
-                payer: {
-                    name: currentUser.name || 'Usuário WorkSwipe',
-                    email: currentUser.email || 'usuario@workswipe.com'
+            // Fazer requisição para o backend
+            const response = await fetch('http://localhost:3001/api/create-preference', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
                 },
-                back_urls: {
-                    success: MERCADOPAGO_CONFIG.callbacks.success,
-                    failure: MERCADOPAGO_CONFIG.callbacks.failure,
-                    pending: MERCADOPAGO_CONFIG.callbacks.pending
-                },
-                auto_return: 'approved',
-                external_reference: `${planId}_${currentUser.id || Date.now()}`,
-                notification_url: window.location.origin + '/webhook/mercadopago'
-            };
+                body: JSON.stringify({
+                    planId: planId,
+                    userEmail: currentUser.email || 'usuario@workswipe.com',
+                    userName: currentUser.name || 'Usuário WorkSwipe'
+                })
+            });
 
-            // Aqui você precisará fazer uma requisição para seu backend
-            // para criar a preferência no MercadoPago
-            // Por enquanto, vamos simular a resposta
-            const response = await this.createPreferenceOnBackend(preference);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro ao criar preferência');
+            }
+
+            const preferenceData = await response.json();
+            return preferenceData;
             
-            return response;
         } catch (error) {
             console.error('Erro ao criar preferência:', error);
             throw error;
@@ -161,15 +153,15 @@ class MercadoPagoPayments {
     // Processar pagamento com Checkout Pro
     async processPayment(planId) {
         try {
-            if (!this.initialized) {
-                throw new Error('MercadoPago não foi inicializado');
-            }
-
-            // Criar preferência
+            // Criar preferência no backend
             const preference = await this.createPaymentPreference(planId);
             
+            // Salvar referência para rastreamento
+            localStorage.setItem('workswipe_payment_reference', preference.externalReference);
+            
             // Redirecionar para o checkout do MercadoPago
-            window.location.href = preference.sandbox_init_point || preference.init_point;
+            const checkoutUrl = preference.sandboxInitPoint || preference.initPoint;
+            window.location.href = checkoutUrl;
             
         } catch (error) {
             console.error('Erro no processamento do pagamento:', error);
@@ -198,17 +190,70 @@ class MercadoPagoPayments {
             premiumFeatures: plan.features
         };
 
-        // Salvar no localStorage
+        // Salvar no localStorage (múltiplos formatos para compatibilidade)
         Object.assign(currentUser, premiumData);
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
         localStorage.setItem('premiumStatus', JSON.stringify(premiumData));
+        
+        // Salvar também no formato usado pelo app principal
+        localStorage.setItem('ws_premium', JSON.stringify(true));
 
         console.log('Premium ativado:', premiumData);
         return premiumData;
     }
 
     // Verificar status premium
-    isPremiumActive() {
+    async isPremiumActive() {
+        try {
+            // Primeiro verificar localmente
+            const localPremiumStatus = JSON.parse(localStorage.getItem('premiumStatus') || '{}');
+            
+            // Se tiver dados locais válidos, usar eles
+            if (localPremiumStatus.isPremium) {
+                const expirationDate = new Date(localPremiumStatus.premiumExpiration);
+                const now = new Date();
+                
+                if (now < expirationDate) {
+                    return true;
+                }
+            }
+
+            // Verificar no backend se disponível
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (currentUser.email) {
+                    const response = await fetch(`http://localhost:3001/api/user-premium/${encodeURIComponent(currentUser.email)}`);
+                    
+                    if (response.ok) {
+                        const premiumData = await response.json();
+                        
+                        // Atualizar dados locais
+                        if (premiumData.isPremium) {
+                            const updatedStatus = {
+                                isPremium: true,
+                                premiumPlan: premiumData.planId,
+                                premiumExpiration: premiumData.expirationDate,
+                                syncedAt: new Date().toISOString()
+                            };
+                            localStorage.setItem('premiumStatus', JSON.stringify(updatedStatus));
+                        }
+                        
+                        return premiumData.isPremium;
+                    }
+                }
+            } catch (backendError) {
+                console.warn('Backend não disponível, usando dados locais:', backendError.message);
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('Erro ao verificar status premium:', error);
+            return false;
+        }
+    }
+
+    // Versão síncrona para compatibilidade
+    isPremiumActiveSync() {
         try {
             const premiumStatus = JSON.parse(localStorage.getItem('premiumStatus') || '{}');
             
@@ -237,6 +282,65 @@ class MercadoPagoPayments {
             return null;
         }
     }
+
+    // Cancelar plano premium
+    async cancelPremium(reason = null) {
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            
+            if (!currentUser.email) {
+                // Se não há usuário, criar um padrão
+                currentUser.email = 'usuario@workswipe.com';
+            }
+
+            let cancelData = {
+                success: true,
+                cancelledAt: new Date().toISOString(),
+                planId: 'monthly',
+                reason: reason
+            };
+
+            // Tentar fazer requisição para o backend (opcional)
+            try {
+                const response = await fetch('http://localhost:3001/api/cancel-premium', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userEmail: currentUser.email,
+                        reason: reason
+                    })
+                });
+
+                if (response.ok) {
+                    const backendData = await response.json();
+                    cancelData = { ...cancelData, ...backendData };
+                }
+            } catch (backendError) {
+                console.warn('Backend indisponível, cancelando localmente:', backendError.message);
+                // Continuar com cancelamento local
+            }
+
+            // Atualizar dados locais
+            const premiumStatus = {
+                isPremium: false,
+                cancelledAt: cancelData.cancelledAt,
+                cancellationReason: reason,
+                lastPlanId: cancelData.planId
+            };
+
+            localStorage.setItem('premiumStatus', JSON.stringify(premiumStatus));
+            localStorage.setItem('ws_premium', JSON.stringify(false));
+
+            console.log('Plano cancelado com sucesso:', cancelData);
+            return cancelData;
+
+        } catch (error) {
+            console.error('Erro ao cancelar plano:', error);
+            throw error;
+        }
+    }
 }
 
 // Instância global
@@ -247,9 +351,15 @@ window.MercadoPagoUtils = {
     initializeMercadoPago: () => mercadoPagoPayments.initialize(),
     processPayment: (planId) => mercadoPagoPayments.processPayment(planId),
     activatePremium: (planId) => mercadoPagoPayments.activatePremium(planId),
-    isPremiumActive: () => mercadoPagoPayments.isPremiumActive(),
+    cancelPremium: (reason) => mercadoPagoPayments.cancelPremium(reason),
+    isPremiumActive: () => mercadoPagoPayments.isPremiumActiveSync(),
+    isPremiumActiveAsync: () => mercadoPagoPayments.isPremiumActive(),
     getCurrentPremiumPlan: () => mercadoPagoPayments.getCurrentPremiumPlan(),
-    getPremiumPlans: () => PREMIUM_PLANS
+    getPremiumPlans: () => PREMIUM_PLANS,
+    checkPaymentStatus: (externalReference) => {
+        return fetch(`http://localhost:3001/api/payment-status/${externalReference}`)
+            .then(response => response.json());
+    }
 };
 
 export { 

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Gerenciar Plano Premium - WorkSwipe</title>
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/manage-premium.css">
+    <link rel="icon" href="data:,">
+</head>
+<body>
+    <a href="main.html" class="back-link">
+        ← Voltar ao WorkSwipe
+    </a>
+    
+    <div class="manage-page">
+        <div class="manage-header">
+            <h1>Gerenciar Plano Premium</h1>
+            <p>Controle sua assinatura WorkSwipe Premium</p>
+        </div>
+
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+        <!-- Botões de Teste (apenas para desenvolvimento) -->
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border-left: 4px solid #17a2b8;">
+            <h4 style="margin: 0 0 1rem 0; color: #17a2b8;">🧪 Área de Testes</h4>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button onclick="activateTestPremium()" class="button button-primary" style="min-width: auto; padding: 0.5rem 1rem;">
+                    Ativar Premium Teste
+                </button>
+                <button onclick="deactivateTestPremium()" class="button button-secondary" style="min-width: auto; padding: 0.5rem 1rem;">
+                    Desativar Premium
+                </button>
+                <button onclick="loadPlanInfo()" class="button" style="min-width: auto; padding: 0.5rem 1rem; background: #6c757d; color: white;">
+                    Recarregar Dados
+                </button>
+            </div>
+        </div>
+
+        <!-- Informações do Plano -->
+        <div id="planInfo" class="plan-info">
+            <div class="plan-title" id="planTitle">Carregando...</div>
+            <div class="plan-status" id="planStatus">Verificando status...</div>
+            
+            <div class="plan-details">
+                <div class="detail-item">
+                    <div class="detail-label">Plano</div>
+                    <div class="detail-value" id="planType">-</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Status</div>
+                    <div class="detail-value" id="planStatusDetail">-</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Ativado em</div>
+                    <div class="detail-value" id="activatedDate">-</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Válido até</div>
+                    <div class="detail-value" id="expirationDate">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações do Plano -->
+        <div id="actionsSection" class="actions-section">
+            <h3>Ações Disponíveis</h3>
+            
+            <div class="action-buttons" id="actionButtons">
+                <!-- Botões serão inseridos dinamicamente -->
+            </div>
+
+            <!-- Formulário de Cancelamento -->
+            <div id="cancelForm" class="cancel-form">
+                <h4>Cancelar Plano Premium</h4>
+                <p>Tem certeza de que deseja cancelar seu plano premium? Você perderá o acesso aos recursos premium imediatamente.</p>
+                
+                <div class="form-group">
+                    <label for="cancelReason">Motivo do cancelamento:</label>
+                    <select id="cancelReason">
+                        <option value="">Selecione um motivo (opcional)</option>
+                        <option value="muito_caro">Muito caro</option>
+                        <option value="nao_uso">Não uso os recursos</option>
+                        <option value="problemas_tecnicos">Problemas técnicos</option>
+                        <option value="encontrei_alternativa">Encontrei uma alternativa</option>
+                        <option value="temporario">Pausa temporária</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cancelComments">Comentários adicionais (opcional):</label>
+                    <textarea id="cancelComments" placeholder="Nos ajude a melhorar contando mais sobre sua experiência..."></textarea>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="button button-danger" onclick="confirmCancellation()">
+                        Confirmar Cancelamento
+                    </button>
+                    <button class="button button-secondary" onclick="hideCancelForm()">
+                        Manter Plano
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benefícios Premium -->
+        <div class="benefits-list" id="benefitsList">
+            <h3>Benefícios do WorkSwipe Premium</h3>
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <span class="benefit-icon">⚡</span>
+                    <span>Super likes ilimitados</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">👀</span>
+                    <span>Veja quem curtiu você</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">🔍</span>
+                    <span>Filtros avançados de busca</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">⭐</span>
+                    <span>Prioridade nos matches</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">🎯</span>
+                    <span>Análises detalhadas de perfil</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">💎</span>
+                    <span>Badge premium exclusivo</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p id="loadingMessage">Processando...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Tentar importar MercadoPago, mas não falhar se não conseguir
+        let mercadoPagoPayments = null;
+        try {
+            const module = await import('./assets/js/mercadopago-config.js');
+            mercadoPagoPayments = module.mercadoPagoPayments;
+            console.log('MercadoPago carregado com sucesso');
+        } catch (error) {
+            console.warn('MercadoPago não pôde ser carregado:', error.message);
+        }
+
+        let currentPremiumData = null;
+
+        // Mostrar mensagem de status
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+            
+            // Auto-ocultar após 5 segundos
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Mostrar/ocultar loading
+        function showLoading(show = true, message = 'Processando...') {
+            document.getElementById('loadingMessage').textContent = message;
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // Carregar informações do plano
+        async function loadPlanInfo() {
+            try {
+                showLoading(true, 'Carregando informações do plano...');
+
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                console.log('Usuário atual:', currentUser);
+                
+                // Se não há usuário logado, criar um usuário padrão para teste
+                if (!currentUser.email) {
+                    const defaultUser = {
+                        email: 'usuario@workswipe.com',
+                        name: 'Usuário Teste'
+                    };
+                    localStorage.setItem('currentUser', JSON.stringify(defaultUser));
+                    console.log('Usuário padrão criado para teste:', defaultUser);
+                    currentUser.email = defaultUser.email;
+                    currentUser.name = defaultUser.name;
+                }
+
+                // Verificar se há dados premium no localStorage (sistema antigo)
+                const localPremium = JSON.parse(localStorage.getItem('ws_premium') || 'false');
+                const premiumStatus = JSON.parse(localStorage.getItem('premiumStatus') || 'null');
+                console.log('Premium no localStorage (ws_premium):', localPremium);
+                console.log('Status premium (premiumStatus):', premiumStatus);
+
+                let backendData = { isPremium: false };
+                
+                try {
+                    // Tentar buscar dados do backend
+                    const response = await fetch(`http://localhost:3001/api/user-premium/${encodeURIComponent(currentUser.email)}`);
+                    
+                    if (response.ok) {
+                        backendData = await response.json();
+                        console.log('Dados do backend:', backendData);
+                    } else {
+                        console.warn('Backend não disponível, usando dados locais');
+                    }
+                } catch (error) {
+                    console.warn('Erro ao conectar com backend:', error.message);
+                }
+
+                // Combinar dados do localStorage com backend (prioridade para localStorage se houver conflito)
+                const isPremiumFromLocal = localPremium || (premiumStatus && premiumStatus.isPremium);
+                
+                const premiumData = {
+                    isPremium: isPremiumFromLocal || backendData.isPremium,
+                    planId: backendData.planId || (premiumStatus && premiumStatus.premiumPlan) || (isPremiumFromLocal ? 'monthly' : null),
+                    activatedAt: backendData.activatedAt || (isPremiumFromLocal ? new Date().toISOString() : null),
+                    expirationDate: backendData.expirationDate || (premiumStatus && premiumStatus.premiumExpiration) || (isPremiumFromLocal ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null),
+                    cancelledAt: backendData.cancelledAt || (premiumStatus && premiumStatus.cancelledAt),
+                    cancellationReason: backendData.cancellationReason || (premiumStatus && premiumStatus.cancellationReason),
+                    lastPlanId: backendData.lastPlanId || (premiumStatus && premiumStatus.lastPlanId)
+                };
+
+                console.log('Dados finais combinados:', premiumData);
+                currentPremiumData = premiumData;
+
+                updatePlanUI(premiumData);
+
+            } catch (error) {
+                console.error('Erro ao carregar plano:', error);
+                showStatus('Erro ao carregar informações do plano: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Atualizar interface com dados do plano
+        function updatePlanUI(data) {
+            const planInfo = document.getElementById('planInfo');
+            const planTitle = document.getElementById('planTitle');
+            const planStatus = document.getElementById('planStatus');
+            const planType = document.getElementById('planType');
+            const planStatusDetail = document.getElementById('planStatusDetail');
+            const activatedDate = document.getElementById('activatedDate');
+            const expirationDate = document.getElementById('expirationDate');
+            const actionButtons = document.getElementById('actionButtons');
+
+            if (data.isPremium) {
+                // Usuário tem premium ativo
+                planInfo.className = 'plan-info';
+                planTitle.textContent = 'WorkSwipe Premium Ativo';
+                planStatus.textContent = 'Seu plano premium está ativo e funcionando';
+                
+                planType.textContent = data.planId === 'monthly' ? 'Mensal' : 'Anual';
+                planStatusDetail.textContent = 'Ativo';
+                activatedDate.textContent = data.activatedAt ? 
+                    new Date(data.activatedAt).toLocaleDateString('pt-BR') : '-';
+                expirationDate.textContent = data.expirationDate ? 
+                    new Date(data.expirationDate).toLocaleDateString('pt-BR') : '-';
+
+                // Botões para usuário premium
+                actionButtons.innerHTML = `
+                    <button class="button button-primary" onclick="window.location.href='premium.html'">
+                        Alterar Plano
+                    </button>
+                    <button class="button button-danger" onclick="showCancelForm()">
+                        Cancelar Plano
+                    </button>
+                `;
+
+            } else if (data.cancelledAt) {
+                // Usuário cancelou o premium
+                planInfo.className = 'plan-info cancelled';
+                planTitle.textContent = 'Plano Premium Cancelado';
+                planStatus.textContent = 'Seu plano premium foi cancelado';
+                
+                planType.textContent = data.lastPlanId ? 
+                    (data.lastPlanId === 'monthly' ? 'Mensal' : 'Anual') : '-';
+                planStatusDetail.textContent = 'Cancelado';
+                activatedDate.textContent = data.activatedAt ? 
+                    new Date(data.activatedAt).toLocaleDateString('pt-BR') : '-';
+                expirationDate.textContent = data.cancelledAt ? 
+                    new Date(data.cancelledAt).toLocaleDateString('pt-BR') : '-';
+
+                // Botões para usuário que cancelou
+                actionButtons.innerHTML = `
+                    <button class="button button-primary" onclick="window.location.href='premium.html'">
+                        Reativar Premium
+                    </button>
+                `;
+
+                if (data.cancellationReason) {
+                    showStatus(`Plano cancelado. Motivo: ${data.cancellationReason}`, 'info');
+                }
+
+            } else {
+                // Usuário não tem premium
+                planInfo.className = 'plan-info cancelled';
+                planTitle.textContent = 'Sem Plano Premium';
+                planStatus.textContent = 'Você não possui um plano premium ativo';
+                
+                planType.textContent = '-';
+                planStatusDetail.textContent = 'Inativo';
+                activatedDate.textContent = '-';
+                expirationDate.textContent = '-';
+
+                // Botões para usuário sem premium
+                actionButtons.innerHTML = `
+                    <button class="button button-primary" onclick="window.location.href='premium.html'">
+                        Assinar Premium
+                    </button>
+                `;
+            }
+        }
+
+        // Mostrar formulário de cancelamento
+        window.showCancelForm = function() {
+            document.getElementById('cancelForm').style.display = 'block';
+        };
+
+        // Ocultar formulário de cancelamento
+        window.hideCancelForm = function() {
+            document.getElementById('cancelForm').style.display = 'none';
+        };
+
+        // Confirmar cancelamento
+        window.confirmCancellation = async function() {
+            try {
+                const reason = document.getElementById('cancelReason').value;
+                const comments = document.getElementById('cancelComments').value;
+                
+                const fullReason = comments ? `${reason}: ${comments}` : reason;
+
+                showLoading(true, 'Cancelando plano...');
+
+                // Verificar se o MercadoPagoUtils está disponível
+                if (typeof window.MercadoPagoUtils !== 'undefined' && window.MercadoPagoUtils.cancelPremium) {
+                    const result = await window.MercadoPagoUtils.cancelPremium(fullReason);
+                } else {
+                    // Cancelamento local se MercadoPago não estiver disponível
+                    console.warn('MercadoPagoUtils não disponível, cancelando localmente');
+                    
+                    // Desativar premium localmente
+                    localStorage.setItem('ws_premium', JSON.stringify(false));
+                    
+                    const cancelData = {
+                        isPremium: false,
+                        cancelledAt: new Date().toISOString(),
+                        cancellationReason: fullReason,
+                        lastPlanId: 'monthly'
+                    };
+                    
+                    localStorage.setItem('premiumStatus', JSON.stringify(cancelData));
+                }
+                
+                showStatus('Plano premium cancelado com sucesso!', 'success');
+                
+                // Recarregar informações
+                setTimeout(() => {
+                    loadPlanInfo();
+                    hideCancelForm();
+                }, 1500);
+
+            } catch (error) {
+                console.error('Erro ao cancelar:', error);
+                showStatus('Erro ao cancelar plano. Tentando cancelamento local...', 'error');
+                
+                // Fallback: cancelar localmente mesmo com erro
+                try {
+                    localStorage.setItem('ws_premium', JSON.stringify(false));
+                    localStorage.removeItem('premiumStatus');
+                    
+                    setTimeout(() => {
+                        showStatus('Plano cancelado localmente!', 'success');
+                        loadPlanInfo();
+                        hideCancelForm();
+                    }, 1000);
+                } catch (localError) {
+                    showStatus('Erro crítico: ' + localError.message, 'error');
+                }
+            } finally {
+                showLoading(false);
+            }
+        };
+
+        // Funções de teste
+        window.activateTestPremium = function() {
+            // Ativar premium no formato do app principal
+            localStorage.setItem('ws_premium', JSON.stringify(true));
+            
+            // Ativar premium no formato do sistema de pagamentos
+            const premiumData = {
+                isPremium: true,
+                premiumPlan: 'monthly',
+                premiumExpiration: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                premiumFeatures: ['unlimited_super_likes', 'see_who_likes', 'advanced_filters', 'priority_matches']
+            };
+            
+            localStorage.setItem('premiumStatus', JSON.stringify(premiumData));
+            
+            // Atualizar dados do usuário atual
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            Object.assign(currentUser, premiumData);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            showStatus('✅ Premium ativado para teste!', 'success');
+            
+            // Recarregar dados
+            setTimeout(() => loadPlanInfo(), 1000);
+        };
+
+        window.deactivateTestPremium = function() {
+            localStorage.setItem('ws_premium', JSON.stringify(false));
+            localStorage.removeItem('premiumStatus');
+            
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            delete currentUser.isPremium;
+            delete currentUser.premiumPlan;
+            delete currentUser.premiumExpiration;
+            delete currentUser.premiumFeatures;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            showStatus('❌ Premium desativado!', 'info');
+            
+            // Recarregar dados
+            setTimeout(() => loadPlanInfo(), 1000);
+        };
+
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPlanInfo();
+        });
+    </script>
+</body>
+</html>
