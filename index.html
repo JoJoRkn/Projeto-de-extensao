@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WorkSwipe — Match de Trabalho</title>
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/index.css" />
+  <!-- Evita 404 de favicon durante desenvolvimento -->
+  <link rel="icon" href="data:," />
+</head>
+<body>
+  <iframe id="loginFrame" src="login.html"></iframe>
+
+  <script>
+    // Ao receber login-success do iframe, redireciona para a página principal
+    window.addEventListener('message', (event) => {
+      if (!event || !event.data || event.data.type !== 'login-success') return;
+      // Dados já ficam no localStorage; só redirecionamos
+      window.location.href = 'main.html';
+    });
+
+    // Se já estiver logado, vai direto para o app
+    try {
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser) window.location.href = 'main.html';
+    } catch (e) { /* ignore */ }
+  </script>
+
+  <!-- Scripts: carregar app.js como module após o DOM estar pronto -->
+  <script type="module">
+    // Indica que estamos usando módulos ES
+    window.__ES_MODULE__ = true;
+  </script>
+  <!-- index.html não carrega app.js; a lógica principal fica em main.html -->
+</body>
+</html>

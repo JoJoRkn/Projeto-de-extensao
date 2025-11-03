@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+
+# Builds e artefatos
+/dist/
+/build/
+/coverage/
+
+# Logs e debug
+npm-debug.log*
+yarn-error.log*
+*.log
+firebase-debug.log
+
+# Ambiente/local
+.env
+.env.*
+
+# IDE/Editor
+.vscode/
+.idea/
+.cursor/
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Outros caches
+.e4mc_cache/
+.insomniac/
+.ollama/
+.VirtualBox/

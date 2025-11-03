@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Pagamento Aprovado - WorkSwipe</title>
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="icon" href="data:,">
+    <style>
+        .callback-page {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            text-align: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            color: #27ae60;
+            margin-bottom: 1rem;
+        }
+        
+        .success-title {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .success-message {
+            color: #7f8c8d;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .premium-features {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        
+        .premium-features h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .premium-features ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .premium-features li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            color: #2c3e50;
+        }
+        
+        .premium-features li::before {
+            content: '✓';
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .continue-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .continue-button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .payment-info {
+            background: #e8f5e8;
+            border: 1px solid #c3e6cb;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="callback-page">
+        <div class="success-icon">🎉</div>
+        
+        <h1 class="success-title">Pagamento Aprovado!</h1>
+        
+        <p class="success-message">
+            Parabéns! Seu plano Premium foi ativado com sucesso.<br>
+            Agora você tem acesso a todos os recursos exclusivos do WorkSwipe.
+        </p>
+        
+        <div class="payment-info" id="paymentInfo">
+            <strong>Status:</strong> Processando ativação do premium...
+        </div>
+        
+        <div class="premium-features">
+            <h3>Recursos Premium Ativados</h3>
+            <ul>
+                <li>Super likes ilimitados</li>
+                <li>Ver quem curtiu você</li>
+                <li>Filtros avançados de busca</li>
+                <li>Prioridade nos matches</li>
+                <li>Badge premium exclusivo</li>
+                <li>Suporte prioritário</li>
+            </ul>
+        </div>
+        
+        <a href="main.html" class="continue-button">
+            Continuar para o WorkSwipe
+        </a>
+        
+        <p style="margin-top: 2rem; color: #7f8c8d; font-size: 0.9rem;">
+            Obrigado por escolher o WorkSwipe Premium! 💎
+        </p>
+    </div>
+
+    <script type="module">
+        import { mercadoPagoPayments } from './assets/js/mercadopago-config.js';
+
+        // Processar parâmetros de retorno do MercadoPago
+        function processPaymentCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentId = urlParams.get('payment_id');
+            const status = urlParams.get('status');
+            const externalReference = urlParams.get('external_reference');
+            
+            const paymentInfoDiv = document.getElementById('paymentInfo');
+            
+            if (paymentId && status === 'approved') {
+                // Extrair ID do plano da referência externa
+                let planId = 'monthly'; // default
+                if (externalReference) {
+                    const [extractedPlanId] = externalReference.split('_');
+                    if (['monthly', 'yearly'].includes(extractedPlanId)) {
+                        planId = extractedPlanId;
+                    }
+                }
+                
+                // Ativar premium
+                try {
+                    const premiumData = mercadoPagoPayments.activatePremium(planId);
+                    paymentInfoDiv.innerHTML = `
+                        <strong>✅ Premium Ativado!</strong><br>
+                        Plano: ${premiumData.premiumPlan}<br>
+                        Válido até: ${new Date(premiumData.premiumExpiration).toLocaleDateString('pt-BR')}
+                    `;
+                    paymentInfoDiv.style.background = '#d4edda';
+                    paymentInfoDiv.style.borderColor = '#c3e6cb';
+                } catch (error) {
+                    console.error('Erro ao ativar premium:', error);
+                    paymentInfoDiv.innerHTML = `
+                        <strong>⚠️ Erro na ativação</strong><br>
+                        Entre em contato com o suporte mencionando o ID: ${paymentId}
+                    `;
+                    paymentInfoDiv.style.background = '#fff3cd';
+                    paymentInfoDiv.style.borderColor = '#ffeaa7';
+                }
+            } else {
+                paymentInfoDiv.innerHTML = `
+                    <strong>ℹ️ Processando...</strong><br>
+                    Aguarde a confirmação do pagamento.
+                `;
+                paymentInfoDiv.style.background = '#d1ecf1';
+                paymentInfoDiv.style.borderColor = '#bee5eb';
+            }
+        }
+
+        // Executar quando a página carregar
+        document.addEventListener('DOMContentLoaded', processPaymentCallback);
+    </script>
+</body>
+</html>

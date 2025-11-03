@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Pagamento Pendente - WorkSwipe</title>
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="icon" href="data:,">
+    <style>
+        .callback-page {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            text-align: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .pending-icon {
+            font-size: 4rem;
+            color: #f39c12;
+            margin-bottom: 1rem;
+        }
+        
+        .pending-title {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .pending-message {
+            color: #7f8c8d;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+        
+        .button {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .button-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .button-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .button-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .button-secondary:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+        
+        .instructions-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        
+        .instructions-section h3 {
+            color: #856404;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .instructions-section ul {
+            list-style: none;
+            padding: 0;
+            color: #856404;
+        }
+        
+        .instructions-section li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .instructions-section li::before {
+            content: '⏳';
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .payment-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #f39c12;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="callback-page">
+        <div class="pending-icon">⏳</div>
+        
+        <h1 class="pending-title">Pagamento Pendente</h1>
+        
+        <p class="pending-message">
+            <span class="status-indicator"></span>
+            Seu pagamento está sendo processado.<br>
+            Aguarde a confirmação do meio de pagamento escolhido.
+        </p>
+        
+        <div class="payment-info" id="paymentInfo">
+            <strong>Status:</strong> Aguardando confirmação...
+        </div>
+        
+        <div class="instructions-section">
+            <h3>O que acontece agora?</h3>
+            <ul>
+                <li>Seu pagamento está sendo verificado</li>
+                <li>Você receberá uma notificação por email</li>
+                <li>O premium será ativado automaticamente</li>
+                <li>Pode levar até 24 horas para confirmar</li>
+            </ul>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="main.html" class="button button-primary">
+                Continuar Usando (Grátis)
+            </a>
+            <button onclick="checkPaymentStatus()" class="button button-secondary">
+                Verificar Status
+            </button>
+        </div>
+        
+        <p style="margin-top: 2rem; color: #7f8c8d; font-size: 0.9rem;">
+            Dúvidas? Entre em contato: suporte@workswipe.com
+        </p>
+    </div>
+
+    <script>
+        let paymentId = null;
+        let checkInterval = null;
+
+        // Processar parâmetros de retorno do MercadoPago
+        function processPaymentPending() {
+            const urlParams = new URLSearchParams(window.location.search);
+            paymentId = urlParams.get('payment_id');
+            const status = urlParams.get('status');
+            const paymentType = urlParams.get('payment_type');
+            
+            const paymentInfoDiv = document.getElementById('paymentInfo');
+            
+            let statusMessage = 'Aguardando confirmação...';
+            let instructions = '';
+            
+            // Mensagens específicas por tipo de pagamento
+            switch (paymentType) {
+                case 'ticket':
+                    statusMessage = 'Boleto gerado - Aguardando pagamento';
+                    instructions = 'Pague o boleto em qualquer banco ou aplicativo';
+                    break;
+                case 'pix':
+                    statusMessage = 'PIX gerado - Aguardando pagamento';
+                    instructions = 'Escaneie o QR Code ou copie o código PIX';
+                    break;
+                case 'credit_card':
+                    statusMessage = 'Cartão em análise - Aguardando aprovação';
+                    instructions = 'Seu banco está analisando a transação';
+                    break;
+                case 'debit_card':
+                    statusMessage = 'Débito em processamento';
+                    instructions = 'Aguarde a confirmação do banco';
+                    break;
+                default:
+                    if (status === 'pending') {
+                        statusMessage = 'Pagamento pendente de aprovação';
+                        instructions = 'Aguarde a confirmação do processador';
+                    }
+            }
+            
+            paymentInfoDiv.innerHTML = `
+                <strong>Status:</strong> ${statusMessage}
+                ${paymentId ? `<br><strong>ID da Transação:</strong> ${paymentId}` : ''}
+                ${instructions ? `<br><strong>Próximos passos:</strong> ${instructions}` : ''}
+            `;
+
+            // Iniciar verificação automática de status (opcional)
+            if (paymentId) {
+                startStatusCheck();
+            }
+        }
+
+        // Verificar status do pagamento (simulado)
+        function checkPaymentStatus() {
+            if (!paymentId) {
+                alert('ID do pagamento não disponível');
+                return;
+            }
+
+            // Em uma implementação real, aqui faria uma requisição para seu backend
+            // para verificar o status atualizado no MercadoPago
+            
+            const paymentInfoDiv = document.getElementById('paymentInfo');
+            paymentInfoDiv.innerHTML = `
+                <strong>Verificando status...</strong><br>
+                Consultando o MercadoPago...
+            `;
+            
+            // Simular verificação
+            setTimeout(() => {
+                paymentInfoDiv.innerHTML = `
+                    <strong>Status:</strong> Ainda pendente<br>
+                    <strong>ID da Transação:</strong> ${paymentId}<br>
+                    <em>Última verificação: ${new Date().toLocaleTimeString('pt-BR')}</em>
+                `;
+            }, 2000);
+        }
+
+        // Iniciar verificação automática de status
+        function startStatusCheck() {
+            // Verificar status a cada 30 segundos por 10 minutos
+            let attempts = 0;
+            const maxAttempts = 20; // 20 * 30s = 10 minutos
+
+            checkInterval = setInterval(() => {
+                attempts++;
+                
+                // Em uma implementação real, verificaria o status via API
+                console.log(`Verificação automática ${attempts}/${maxAttempts}`);
+                
+                // Parar após máximo de tentativas
+                if (attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    console.log('Verificação automática finalizada');
+                }
+                
+                // Aqui você implementaria a lógica para verificar se o pagamento foi aprovado
+                // e redirecionar para success.html se necessário
+                
+            }, 30000); // 30 segundos
+        }
+
+        // Limpar interval ao sair da página
+        window.addEventListener('beforeunload', () => {
+            if (checkInterval) {
+                clearInterval(checkInterval);
+            }
+        });
+
+        // Executar quando a página carregar
+        document.addEventListener('DOMContentLoaded', processPaymentPending);
+    </script>
+</body>
+</html>

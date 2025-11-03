@@ -1,0 +1,70 @@
+/* 🔐 Login Screen */
+.login-screen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #0f1724, #1e293b);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+.login-box {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 300px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+.login-box input, .login-box select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: transparent;
+  color: #fff;
+}
+.login-box h1 { font-size: 24px; margin-bottom: 8px; }
+.login-box .btn{
+  background:#0b0f16; /* preto/dark */
+  border:1px solid rgba(255,255,255,0.14);
+  color:#fff;
+  width:100%;
+  min-height:42px;
+  justify-content:center;
+}
+.login-box .btn:hover{background:#111827}
+
+/* 🌐 Idioma fixo no topo direito */
+.lang-switch{
+  position:fixed;
+  top:16px;
+  right:16px;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.lang-switch select{
+  padding:6px 10px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.14);
+  background:#0b0f16; /* preto/dark */
+  color:#fff;
+  backdrop-filter: blur(6px);
+}
+.lang-switch select.small{font-size:13px}
+
+/* Google button with icon */
+.btn-google{ display:flex; align-items:center; justify-content:center; gap:10px; }
+.btn-google .google-icon{
+  width:22px; height:22px; border-radius:50%; background:#fff;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.btn-google .google-icon svg{ width:16px; height:16px; display:block }
+
+#loginMessage { color:#ffd700; font-size:13px; margin-top:8px; }
+
