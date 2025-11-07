@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Pagamento Cancelado - WorkSwipe</title>
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="icon" href="data:,">
+    <style>
+        .callback-page {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            text-align: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .failure-icon {
+            font-size: 4rem;
+            color: #e74c3c;
+            margin-bottom: 1rem;
+        }
+        
+        .failure-title {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .failure-message {
+            color: #7f8c8d;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+        
+        .button {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .button-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .button-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .button-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .button-secondary:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+        
+        .help-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        
+        .help-section h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .help-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .help-section li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            color: #2c3e50;
+        }
+        
+        .help-section li::before {
+            content: '💡';
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .payment-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="callback-page">
+        <div class="failure-icon">😞</div>
+        
+        <h1 class="failure-title">Pagamento Não Aprovado</h1>
+        
+        <p class="failure-message">
+            Não foi possível processar seu pagamento.<br>
+            Isso pode acontecer por diversos motivos, mas você pode tentar novamente.
+        </p>
+        
+        <div class="payment-error" id="paymentError">
+            <strong>Status do Pagamento:</strong> Processando informações...
+        </div>
+        
+        <div class="help-section">
+            <h3>Possíveis Causas</h3>
+            <ul>
+                <li>Cartão sem limite disponível</li>
+                <li>Dados do cartão incorretos</li>
+                <li>Problema temporário no processamento</li>
+                <li>Transação cancelada pelo usuário</li>
+                <li>Bloqueio do banco emissor</li>
+            </ul>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="premium.html" class="button button-primary">
+                Tentar Novamente
+            </a>
+            <a href="main.html" class="button button-secondary">
+                Voltar ao WorkSwipe
+            </a>
+        </div>
+        
+        <p style="margin-top: 2rem; color: #7f8c8d; font-size: 0.9rem;">
+            Precisa de ajuda? Entre em contato conosco: suporte@workswipe.com
+        </p>
+    </div>
+
+    <script>
+        // Processar parâmetros de retorno do MercadoPago
+        function processPaymentFailure() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentId = urlParams.get('payment_id');
+            const status = urlParams.get('status');
+            const statusDetail = urlParams.get('status_detail');
+            
+            const paymentErrorDiv = document.getElementById('paymentError');
+            
+            let errorMessage = 'Pagamento não aprovado';
+            let errorDetail = '';
+            
+            // Mapear status do MercadoPago para mensagens amigáveis
+            switch (status) {
+                case 'rejected':
+                    errorMessage = 'Pagamento rejeitado';
+                    break;
+                case 'cancelled':
+                    errorMessage = 'Pagamento cancelado';
+                    break;
+                case 'failure':
+                    errorMessage = 'Falha no pagamento';
+                    break;
+                default:
+                    if (status) {
+                        errorMessage = `Status: ${status}`;
+                    }
+            }
+            
+            // Detalhes específicos do erro
+            switch (statusDetail) {
+                case 'cc_rejected_insufficient_amount':
+                    errorDetail = 'Cartão sem limite disponível';
+                    break;
+                case 'cc_rejected_bad_filled_card_number':
+                    errorDetail = 'Número do cartão incorreto';
+                    break;
+                case 'cc_rejected_bad_filled_date':
+                    errorDetail = 'Data de vencimento incorreta';
+                    break;
+                case 'cc_rejected_bad_filled_security_code':
+                    errorDetail = 'Código de segurança incorreto';
+                    break;
+                case 'cc_rejected_call_for_authorize':
+                    errorDetail = 'Entre em contato com seu banco';
+                    break;
+                default:
+                    if (statusDetail) {
+                        errorDetail = statusDetail;
+                    }
+            }
+            
+            paymentErrorDiv.innerHTML = `
+                <strong>${errorMessage}</strong>
+                ${errorDetail ? `<br>Detalhe: ${errorDetail}` : ''}
+                ${paymentId ? `<br>ID da Transação: ${paymentId}` : ''}
+            `;
+        }
+
+        // Executar quando a página carregar
+        document.addEventListener('DOMContentLoaded', processPaymentFailure);
+    </script>
+</body>
+</html>

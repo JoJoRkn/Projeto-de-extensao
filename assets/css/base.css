@@ -1,0 +1,57 @@
+:root{
+  --bg: #0f1724;
+  --card: #ffffff;
+  --muted: #9aa4b2;
+  --accent: #ff3b30; /* like color */
+  --accent-2: #3b82f6; /* premium blue */
+  --glass: rgba(255,255,255,0.06);
+  --card-radius: 14px;
+  --max-width: 1200px;
+  --shadow: 0 10px 30px rgba(2,6,23,0.6);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:linear-gradient(180deg,#071224 0%, #071a2a 100%);
+  color:#e6eef8;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-height:100vh;
+  padding:20px;
+  gap:18px;
+}
+
+.btn{
+  background:var(--glass);
+  color:var(--card);
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.04);
+  cursor:pointer;
+  transition:transform .12s ease, background .12s;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn.small{padding:6px 8px;font-size:13px}
+
+.hidden { display: none !important; }
+
+/* ===== Global button dark theme ===== */
+/* Aplica o estilo preto para TODOS os botões do app */
+.btn,
+.btn.small,
+.btn.premium,
+.btn.action,
+.btn.reject,
+.btn.like,
+.btn.super {
+  background: #0b0f16 !important; /* preto/dark */
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #fff !important;
+}
+.btn:hover { background: #111827 !important; }
+

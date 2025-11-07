@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>WorkSwipe Premium - Planos</title>
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="icon" href="data:,">
+    <style>
+        .premium-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .premium-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .premium-header h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .premium-header p {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .plans-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .plan-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .plan-card.popular {
+            border-color: #3498db;
+            transform: scale(1.05);
+        }
+        
+        .plan-card.popular::before {
+            content: 'Mais Popular';
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #3498db;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transform: rotate(45deg) translate(30%, -50%);
+            transform-origin: center;
+        }
+        
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        
+        .plan-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .plan-price {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 0.5rem;
+        }
+        
+        .plan-price .currency {
+            font-size: 1rem;
+            vertical-align: top;
+        }
+        
+        .plan-period {
+            color: #7f8c8d;
+            margin-bottom: 1.5rem;
+        }
+        
+        .plan-description {
+            color: #7f8c8d;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+        
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 2rem;
+        }
+        
+        .plan-features li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            color: #2c3e50;
+        }
+        
+        .plan-features li::before {
+            content: '✓';
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .plan-button {
+            width: 100%;
+            padding: 1rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .plan-button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .plan-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .back-link {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .premium-benefits {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+        }
+        
+        .premium-benefits h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .benefit-icon {
+            font-size: 1.5rem;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-spinner {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status-message {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <a href="main.html" class="back-link">
+        ← Voltar ao WorkSwipe
+    </a>
+    
+    <a href="manage-premium.html" class="manage-link" style="position: absolute; top: 1rem; right: 1rem; color: #3498db; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 0.5rem; background: white; padding: 0.5rem 1rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        Gerenciar Plano →
+    </a>
+    
+    <div class="premium-page">
+        <div class="premium-header">
+            <h1>WorkSwipe Premium</h1>
+            <p>Desbloqueie todo o potencial da sua busca por oportunidades com recursos exclusivos</p>
+        </div>
+
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+        <div class="premium-benefits">
+            <h3>Vantagens do Premium</h3>
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <span class="benefit-icon">⚡</span>
+                    <span>Super likes ilimitados</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">👀</span>
+                    <span>Veja quem curtiu você</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">🔍</span>
+                    <span>Filtros avançados de busca</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">⭐</span>
+                    <span>Prioridade nos matches</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">🎯</span>
+                    <span>Análises detalhadas de perfil</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">💎</span>
+                    <span>Badge premium exclusivo</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="plans-container">
+            <div class="plan-card">
+                <div class="plan-title">Premium Mensal</div>
+                <div class="plan-price">
+                    <span class="currency">R$</span>19<span style="font-size: 1.5rem;">,90</span>
+                </div>
+                <div class="plan-period">por mês</div>
+                <div class="plan-description">Experimente todos os recursos premium por um mês</div>
+                <ul class="plan-features">
+                    <li>Super likes ilimitados</li>
+                    <li>Ver quem curtiu você</li>
+                    <li>Filtros avançados</li>
+                    <li>Prioridade nos matches</li>
+                </ul>
+                <button class="plan-button" onclick="selectPlan('monthly')">
+                    Escolher Mensal
+                </button>
+            </div>
+
+            <div class="plan-card popular">
+                <div class="plan-title">Premium Anual</div>
+                <div class="plan-price">
+                    <span class="currency">R$</span>199<span style="font-size: 1.5rem;">,90</span>
+                </div>
+                <div class="plan-period">por ano (2 meses grátis)</div>
+                <div class="plan-description">O melhor custo-benefício com recursos premium completos</div>
+                <ul class="plan-features">
+                    <li>Super likes ilimitados</li>
+                    <li>Ver quem curtiu você</li>
+                    <li>Filtros avançados</li>
+                    <li>Prioridade nos matches</li>
+                    <li>Badge premium exclusivo</li>
+                    <li>Suporte prioritário</li>
+                </ul>
+                <button class="plan-button" onclick="selectPlan('yearly')">
+                    Escolher Anual
+                </button>
+            </div>
+        </div>
+
+        <div style="text-align: center; color: #7f8c8d; font-size: 0.9rem;">
+            <p>💳 Pagamento seguro via MercadoPago</p>
+            <p>🔒 Cancele a qualquer momento</p>
+            <p>📱 Acesso em todos os dispositivos</p>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Processando pagamento...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { mercadoPagoPayments, PREMIUM_PLANS } from './assets/js/mercadopago-config.js';
+
+        // Verificar se o usuário já é premium
+        function checkPremiumStatus() {
+            if (window.MercadoPagoUtils && window.MercadoPagoUtils.isPremiumActive()) {
+                showStatus('Você já possui um plano Premium ativo!', 'success');
+                
+                // Desabilitar botões
+                document.querySelectorAll('.plan-button').forEach(btn => {
+                    btn.disabled = true;
+                    btn.textContent = 'Já Ativo';
+                });
+            }
+        }
+
+        // Mostrar mensagem de status
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+            
+            // Auto-ocultar após 5 segundos
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Mostrar/ocultar loading
+        function showLoading(show = true) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // Selecionar plano
+        window.selectPlan = async function(planId) {
+            try {
+                showLoading(true);
+                
+                // Verificar se o MercadoPago está configurado
+                const initialized = await mercadoPagoPayments.initialize();
+                
+                if (!initialized) {
+                    throw new Error('MercadoPago não está configurado. Verifique as credenciais.');
+                }
+
+                // Para demonstração, vamos ativar o premium diretamente
+                // Em produção, isso seria feito após a confirmação do pagamento
+                const confirm = window.confirm(`Confirma a compra do plano ${PREMIUM_PLANS[planId].title} por R$ ${PREMIUM_PLANS[planId].price}?`);
+                
+                if (confirm) {
+                    // Simular processamento do pagamento
+                    showStatus('Processando pagamento...', 'info');
+                    
+                    // Aguardar 2 segundos para simular processamento
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // Ativar premium
+                    const premiumData = mercadoPagoPayments.activatePremium(planId);
+                    
+                    showStatus('Pagamento aprovado! Premium ativado com sucesso!', 'success');
+                    
+                    // Redirecionar para a página principal após 3 segundos
+                    setTimeout(() => {
+                        window.location.href = 'main.html';
+                    }, 3000);
+                } else {
+                    showStatus('Operação cancelada pelo usuário.', 'info');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao processar pagamento:', error);
+                showStatus('Erro ao processar pagamento: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        };
+
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkPremiumStatus();
+            
+            // MercadoPago será inicializado apenas quando necessário (ao selecionar plano)
+        });
+    </script>
+</body>
+</html>

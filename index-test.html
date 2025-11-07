@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WorkSwipe - Profissional</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">WorkSwipe</div>
+    <div class="nav-links">
+      <a href="#" id="open-likes-modal-btn">Curtidas</a>
+      <a href="#" id="open-premium-modal-btn">Premium</a>
+    </div>
+    <div class="nav-actions">
+      <select id="language-selector" class="lang-select">
+        <option value="pt-BR">🇧🇷 Português</option>
+        <option value="en-US">🇺🇸 English</option>
+      </select>
+      <button class="btn-sair">Sair</button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- Painel Esquerdo -->
+    <aside class="panel panel-left panel-profile">
+      <div class="profile-card-tinder">
+        <div id="profile-pic-large" class="profile-pic-large">
+          <button id="open-edit-modal-btn" class="btn btn-icon profile-edit-btn" title="Editar Perfil">
+            ✎
+          </button>
+          <input type="file" id="profile-pic-upload" class="file-input" accept="image/*">
+          <label for="profile-pic-upload" class="btn btn-icon profile-upload-btn" title="Trocar foto">
+            📷
+          </label>
+        </div>
+
+        <div class="profile-info-tinder">
+          <h2 id="user-name" class="profile-name">Carregando...</h2>
+          <p id="user-status" class="profile-status">Carregando...</p>
+        </div>
+      </div>
+
+      <div class="profile-stats-grid">
+        <div class="stat-item">
+          <strong id="user-views">0</strong>
+          <span>Visualizações</span>
+        </div>
+        <div class="stat-item">
+          <strong id="user-likes">0</strong>
+          <span>Likes</span>
+        </div>
+        <div class="stat-item">
+          <strong id="user-premium" class="premium-status premium-false">Não</strong>
+          <span>Premium</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Feed Central -->
+    <section class="main-feed">
+      <div class="swipe-card">
+        <img class="card-image" src="" alt="Foto de perfil">
+        <div class="card-info">
+          <h2 class="card-name"></h2>
+          <p class="card-title"></p>
+          <p class="card-location"></p>
+          <hr class="card-divider">
+          <div class="card-bio-scroll">
+            <p class="card-bio"></p>
+          </div>
+          <div class="card-skills"></div>
+        </div>
+      </div>
+      <p class="no-more-profiles hidden">Você viu todos os perfis!</p>
+    </section>
+
+    <!-- Painel Direito -->
+    <aside class="panel panel-right">
+      <h3 class="panel-title">Filtros</h3>
+      <form id="filter-form">
+        <div class="form-group">
+          <label for="local" class="form-label">Localização</label>
+          <input type="text" id="local" class="form-input" placeholder="Ex: São Paulo">
+        </div>
+        <div class="form-group">
+          <label for="area" class="form-label">Área</label>
+          <select id="area" class="form-select">
+            <option>Todas</option>
+            <option>Frontend</option>
+            <option>Backend</option>
+            <option>Design</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="remoto" class="form-label">Remoto</label>
+          <select id="remoto" class="form-select">
+            <option>Indiferente</option>
+            <option>Sim</option>
+            <option>Não</option>
+          </select>
+        </div>
+        <div class="button-group">
+          <button type="submit" class="btn btn-primary">Aplicar</button>
+          <button type="reset" class="btn btn-secondary">Limpar</button>
+        </div>
+      </form>
+    </aside>
+  </main>
+
+  <!-- Barra de Ações -->
+  <footer class="action-bar">
+    <button class="btn btn-icon btn-reject">❌</button>
+    <button class="btn btn-icon btn-bio">ℹ️</button>
+    <button class="btn btn-icon btn-like">💚</button>
+    <button class="btn btn-icon btn-super">⭐</button>
+  </footer>
+  <!-- 🔽 CURTIDAS MODAL -->
+  <div id="likes-modal-overlay" class="modal-overlay">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Pessoas que curtiram seu perfil 💚</h2>
+        <button class="modal-close-btn" id="likes-close-btn">&times;</button>
+      </div>
+      <div id="likes-list" class="likes-list"></div>
+    </div>
+  </div>
+
+  <!-- 🔽 PREMIUM MODAL -->
+  <div id="premium-modal-overlay" class="modal-overlay">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Planos Premium 💎</h2>
+        <button class="modal-close-btn" id="premium-close-btn">&times;</button>
+      </div>
+      <div class="plans-container">
+        <div class="plan-card">
+          <h3>Básico</h3>
+          <p>💬 10 curtidas por dia</p>
+          <p>📄 Perfil visível a todos</p>
+          <h4>R$19,90/mês</h4>
+          <button class="btn btn-primary">Assinar</button>
+        </div>
+        <div class="plan-card premium">
+          <h3>Profissional</h3>
+          <p>💚 Curtidas ilimitadas</p>
+          <p>🚀 Destaque no feed</p>
+          <p>💬 Suporte exclusivo</p>
+          <h4>R$39,90/mês</h4>
+          <button class="btn btn-primary">Assinar</button>
+        </div>
+        <div class="plan-card">
+          <h3>Empresarial</h3>
+          <p>🏢 Contratações ilimitadas</p>
+          <p>🧠 IA para recomendação</p>
+          <h4>R$79,90/mês</h4>
+          <button class="btn btn-primary">Assinar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Edição -->
+  <div id="edit-modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Editar Perfil</h2>
+        <button id="modal-close-btn" class="modal-close-btn">&times;</button>
+      </div>
+      <form id="edit-profile-form" class="modal-body">
+        <div class="form-grid">
+          <div class="form-group"><label>Nome</label><input id="edit-name" class="form-input"></div>
+          <div class="form-group"><label>CPF</label><input id="edit-cpf" class="form-input"></div>
+          <div class="form-group"><label>Status</label><select id="edit-status" class="form-select"><option>Ser contratado</option><option>Contratar</option></select></div>
+          <div class="form-group"><label>Título</label><input id="edit-title" class="form-input"></div>
+          <div class="form-group"><label>Empresa</label><input id="edit-company" class="form-input"></div>
+          <div class="form-group form-group-full"><label>Bio</label><textarea id="edit-bio" class="form-input" rows="3"></textarea></div>
+        </div>
+      </form>
+      <div class="modal-footer">
+        <button id="modal-cancel-btn" class="btn btn-secondary">Cancelar</button>
+        <button type="submit" form="edit-profile-form" class="btn btn-primary">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/script.js"></script>
+</body>
+</html>

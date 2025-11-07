@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WorkSwipe — Conteúdo Principal</title>
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <link rel="icon" href="data:," />
+</head>
+<body>
+  <script>
+    // Se não houver usuário logado, volta para a tela de login
+    try { if (!localStorage.getItem('currentUser')) window.location.href = 'index.html'; } catch {}
+  </script>
+
+  <div id="mainApp">
+    <header class="topbar">
+      <div class="logo">WorkSwipe</div>
+      <div class="controls">
+        <button id="modeToggle" class="btn small"><span id="modePrefix">Modo:</span> <span id="modeLabel">Contratar</span></button>
+        <button id="openFilters" class="btn small">Filtros</button>
+        <button id="openPremium" class="btn small premium">Premium</button>
+        <label class="lang-inline" style="margin-left:6px; display:flex; align-items:center; gap:6px;">
+          <span aria-hidden="true">🌐</span>
+          <select id="appLocaleSelect" class="lang-select small">
+            <option value="pt">Português</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <button id="logoutBtn" class="btn small">Sair</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Layout base: perfil (esquerda), swipe (centro), filtros (direita) -->
+      <div class="container">
+        <!-- Painel Esquerdo: Perfil, Stats, Matches -->
+        <aside class="left-panel">
+          <!-- Perfil -->
+          <section class="profile-setup">
+            <div id="userAvatar" class="avatar-placeholder" aria-hidden="true"></div>
+            <div>
+              <input id="userName" type="text" placeholder="Seu nome" />
+              <select id="userRole">
+                <option value="employer">Contratar</option>
+                <option value="candidate">Procurar</option>
+              </select>
+              <button id="saveProfile" class="btn small">Salvar perfil</button>
+            </div>
+          </section>
+
+          <!-- Estatísticas -->
+          <section class="stats">
+            <div>Visualizações: <strong id="statViews">0</strong></div>
+            <div>Likes: <strong id="statLikes">0</strong></div>
+            <div>Premium: <strong id="statPremium">não</strong></div>
+          </section>
+
+          <!-- Matches -->
+          <section class="matches">
+            <h3>Matches</h3>
+            <ul id="matchesList"></ul>
+          </section>
+        </aside>
+
+        <!-- Área central: Deck de cards + ações -->
+        <section class="swipe-area">
+          <div id="cardDeck" class="card-deck"></div>
+          <div class="action-bar">
+            <button id="btnReject" class="btn action reject">Rejeitar</button>
+            <button id="btnBio" class="btn action">Bio</button>
+            <button id="btnLike" class="btn action like">Curtir</button>
+            <button id="btnSuper" class="btn action super">Super</button>
+          </div>
+        </section>
+
+        <!-- Painel Direito: Filtros e dicas -->
+        <aside class="right-panel">
+          <div class="filters-panel">
+            <label>
+              <span>Localização</span>
+              <input id="filterLocation" type="text" placeholder="Ex.: São Paulo" />
+            </label>
+            <label>
+              <span>Área</span>
+              <select id="filterArea">
+                <option value="">Todas</option>
+                <option value="desenvolvimento">Desenvolvimento</option>
+                <option value="design">Design</option>
+                <option value="marketing">Marketing</option>
+                <option value="vendas">Vendas</option>
+              </select>
+            </label>
+            <label>
+              <span>Remoto</span>
+              <select id="filterRemote">
+                <option value="">Indiferente</option>
+                <option value="yes">Sim</option>
+                <option value="no">Não</option>
+              </select>
+            </label>
+            <div style="display:flex; gap:8px;">
+              <button id="applyFilters" class="btn small">Aplicar</button>
+              <button id="clearFilters" class="btn small">Limpar</button>
+            </div>
+          </div>
+
+          <hr style="opacity:.1; margin:12px 0;" />
+          <div>
+            <p style="color:var(--muted);font-size:14px">Dica: ative Premium para Super Like ilimitado.</p>
+            <!-- Botão Premium já existe na Topbar para evitar IDs duplicados -->
+          </div>
+        </aside>
+      </div>
+
+      <!-- Modais -->
+      <div id="modalPremium" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="modal-content">
+          <h2>Premium</h2>
+          <p>Desbloqueie recursos avançados.</p>
+          <div class="pricing">
+            <div class="price-card">
+              <div>Mensal</div>
+              <div class="price">R$ 19,90</div>
+              <button class="btn buy" data-plan="Mensal">Comprar</button>
+            </div>
+            <div class="price-card">
+              <div>Anual</div>
+              <div class="price">R$ 199,90</div>
+              <button class="btn buy" data-plan="Anual">Comprar</button>
+            </div>
+          </div>
+          <button id="closePremium" class="btn small">Fechar</button>
+        </div>
+      </div>
+
+      <div id="modalConfirm" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="modal-content">
+          <h3 id="confirmTitle">Confirmar</h3>
+          <p id="confirmBody">Tem certeza?</p>
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button id="confirmNo" class="btn small">Não</button>
+            <button id="confirmYes" class="btn small">Sim</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bio do Perfil (overlay em tela cheia, âncora à esquerda) -->
+      <div id="bioOverlay" class="bio-overlay hidden" role="dialog" aria-modal="true">
+        <div class="bio-content">
+          <header class="bio-header">
+            <button id="bioClose" class="btn small" aria-label="Fechar bio">Fechar</button>
+          </header>
+          <section class="bio-body">
+            <div class="bio-media">
+              <img id="bioImage" alt="Foto do perfil" />
+            </div>
+            <div class="bio-text">
+              <h2 id="bioName">Nome</h2>
+              <h4 id="bioTitle" class="muted">Título / Área</h4>
+              <div id="bioMeta" class="bio-meta"></div>
+              <p id="bioText"></p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>&copy; 2025 WorkSwipe</span>
+      <span> · </span>
+      <a href="config.html" class="btn small" style="margin-left:6px;">Configurações</a>
+    </footer>
+  </div>
+
+  <!-- i18n da topbar -->
+  <script type="module">
+    import { t, setLocale, getLocale, onLocaleChange } from './assets/js/tradutor.js';
+    const el = {
+      modePrefix: document.getElementById('modePrefix'),
+      openFilters: document.getElementById('openFilters'),
+      openPremium: document.getElementById('openPremium'),
+      logoutBtn: document.getElementById('logoutBtn'),
+      localeSelect: document.getElementById('appLocaleSelect'),
+    };
+    function applyTopbarI18n(){
+      if (el.modePrefix) el.modePrefix.textContent = t('app.topbar.modePrefix');
+      if (el.openFilters) el.openFilters.textContent = t('app.topbar.filters');
+      if (el.openPremium) el.openPremium.textContent = t('app.topbar.premium');
+      if (el.logoutBtn) el.logoutBtn.textContent = t('app.topbar.logout');
+      if (el.localeSelect) el.localeSelect.value = getLocale();
+    }
+    applyTopbarI18n();
+    onLocaleChange(applyTopbarI18n);
+    if (el.localeSelect) el.localeSelect.addEventListener('change', (e)=> setLocale(e.target.value));
+  </script>
+
+  <!-- App principal -->
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
