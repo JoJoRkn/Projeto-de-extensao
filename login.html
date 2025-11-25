@@ -54,7 +54,7 @@
 
   <script type="module">
     // Importa helpers do firebase-config
-    import { registerUser, loginUser, getUserData, resetPassword, loginWithGoogle } from './assets/js/firebase-config.js';
+    import { apiLogin, apiRegister, resetPassword, loginWithGoogle } from './assets/js/firebase-config.js';
     import { t, setLocale, getLocale, onLocaleChange } from './assets/js/tradutor.js';
     // Indica que estamos usando módulos ES
     window.__ES_MODULE__ = true;
@@ -121,8 +121,24 @@
 
     // Handler do login com Firebase
     loginForm.loginBtn.addEventListener('click', async () => {
-        const email = loginForm.email.value;
-        const password = loginForm.password.value;
+        const result = await apiLogin(email, password);
+
+if (result.status !== "ok") {
+    return showMessage("Erro ao entrar: " + (result.message || ""), true);
+}
+
+const currentUser = {
+    uid: result.uid,
+    email: result.email
+};
+
+// salva no navegador
+localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+// avisa ao index.html para ir ao main.html
+window.parent.postMessage({ type: "login-success", user: currentUser }, "*");
+
+showMessage("Login realizado!", false);
 
         if (!email || !password) {
             return showMessage(t('msg.fillAll'), true);
@@ -183,7 +199,14 @@
 
             console.log('Iniciando registro no Firebase...');
             // Usa wrapper para registrar
-            const result = await registerUser(email, password, type);
+            const result = await apiRegister(email, password, type);
+
+if (result.status !== "created") {
+    return showMessage("Erro ao criar conta: " + (result.message || ""), true);
+}
+
+showMessage("Conta criada com sucesso!", false);
+
             console.log('Registro bem sucedido:', result);
 
             if (result && (result.userCredential || result.user)) {
