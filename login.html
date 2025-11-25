@@ -6,55 +6,60 @@
   <title>WorkSwipe — Login</title>
   <link rel="stylesheet" href="assets/css/base.css" />
   <link rel="stylesheet" href="assets/css/login.css" />
-  <link rel="icon" href="data:," />
+    <!-- Evita 404 de favicon durante desenvolvimento -->
+    <link rel="icon" href="data:," />
 </head>
 <body>
-
-    <!-- Idioma -->
-    <div class="lang-switch">
-        <span>🌐</span>
+    <!-- Switch de idioma fixo no canto superior direito -->
+    <div class="lang-switch" aria-label="Language selector">
+        <span style="opacity:.85">🌐</span>
         <select id="localeSelect" class="small">
             <option value="pt">Português</option>
             <option value="en">English</option>
         </select>
     </div>
-
-    <div id="loginScreen" class="login-screen">
-        <div class="login-box">
-
-            <h1 id="titleApp">WorkSwipe</h1>
-            <h2 id="titleConnect">Conecte-se</h2>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-box">
+                        <h1 id="titleApp">WorkSwipe</h1>
+                        <h2 id="titleConnect">Conecte-se</h2>
 
             <label for="loginType" id="labelAccountType">Tipo de conta:</label>
-            <select id="loginType">
+      <select id="loginType">
                 <option value="candidate" id="optCandidate">Candidato</option>
                 <option value="employer" id="optEmployer">Empresa</option>
-            </select>
+      </select>
 
             <input type="email" id="loginEmail" placeholder="E-mail" />
             <input type="password" id="loginPassword" placeholder="Senha" />
 
             <button id="btnLogin" class="btn">Entrar</button>
             <button id="btnRegister" class="btn small">Criar Conta</button>
-            <button id="btnForgot" class="btn small">Esqueci minha senha</button>
+                        <button id="btnForgot" class="btn small">Esqueci minha senha</button>
+                        <button id="btnGoogle" class="btn small btn-google" aria-label="Login with Google">
+                            <span class="google-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18">
+                                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12 s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C33.535,6.053,28.983,4,24,4C12.955,4,4,12.955,4,24 s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,16.108,18.961,13,24,13c3.059,0,5.842,1.154,7.961,3.039 l5.657-5.657C33.535,6.053,28.983,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                                    <path fill="#4CAF50" d="M24,44c4.915,0,9.39-1.877,12.769-4.935l-5.882-4.982C29.861,35.978,27.071,37,24,37 c-5.202,0-9.617-3.317-11.277-7.946l-6.5,5.01C9.503,39.556,16.227,44,24,44z"/>
+                                    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.79,2.232-2.231,4.166-4.085,5.549 c0.001-0.001,0.002-0.001,0.003-0.002l5.882,4.982C35.793,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                                </svg>
+                            </span>
+                            <span id="btnGoogleLabel">Entrar com Google</span>
+                        </button>
 
-            <button id="btnGoogle" class="btn small btn-google">
-                <span id="btnGoogleLabel">Entrar com Google</span>
-            </button>
-
-            <small id="loginMessage"></small>
-        </div>
+    <small id="loginMessage"></small>
+    <small id="domainHint" style="color:#9aa4b2"></small>
     </div>
+  </div>
 
-<script type="module">
-
-    import { apiLogin, apiRegister } from "./assets/js/api.js";
-    import { resetPassword, loginWithGoogle } from "./assets/js/firebase-config.js";
-    import { t, setLocale, getLocale, onLocaleChange } from "./assets/js/tradutor.js";
-
+  <script type="module">
+    // Importa helpers do firebase-config
+    import { registerUser, loginUser, getUserData, resetPassword, loginWithGoogle } from './assets/js/firebase-config.js';
+    import { t, setLocale, getLocale, onLocaleChange } from './assets/js/tradutor.js';
+    // Indica que estamos usando módulos ES
     window.__ES_MODULE__ = true;
 
-    // elementos
+    // Elementos do DOM
     const loginForm = {
         type: document.getElementById('loginType'),
         email: document.getElementById('loginEmail'),
@@ -62,89 +67,854 @@
         loginBtn: document.getElementById('btnLogin'),
         registerBtn: document.getElementById('btnRegister'),
         forgotBtn: document.getElementById('btnForgot'),
-        googleBtn: document.getElementById('btnGoogle'),
         message: document.getElementById('loginMessage'),
+        localeSelect: document.getElementById('localeSelect'),
+        titleApp: document.getElementById('titleApp'),
+        titleConnect: document.getElementById('titleConnect'),
+        labelAccountType: document.getElementById('labelAccountType'),
+        optCandidate: document.getElementById('optCandidate'),
+        optEmployer: document.getElementById('optEmployer'),
+        googleBtn: document.getElementById('btnGoogle'),
+        googleLabel: document.getElementById('btnGoogleLabel'),
+        domainHint: document.getElementById('domainHint'),
     };
 
-    function showMessage(msg, error = false) {
-        loginForm.message.textContent = msg;
-        loginForm.message.style.color = error ? "#ff4444" : "#44ff44";
+    // Função para mostrar mensagens
+    function showMessage(text, isError = false) {
+        loginForm.message.textContent = text;
+        loginForm.message.style.color = isError ? '#ff4444' : '#44ff44';
     }
 
-    // LOGIN via Spring Boot API
-    loginForm.loginBtn.addEventListener("click", async () => {
+    // Aplica textos traduzidos aos elementos fixos da UI
+    function applyI18nTexts() {
+        loginForm.titleApp.textContent = t('ui.title');
+        loginForm.titleConnect.textContent = t('ui.connect');
+        loginForm.labelAccountType.textContent = t('ui.accountType');
+        loginForm.optCandidate.textContent = t('ui.candidate');
+        loginForm.optEmployer.textContent = t('ui.employer');
+        loginForm.email.placeholder = t('ui.email');
+        loginForm.password.placeholder = t('ui.password');
+        loginForm.loginBtn.textContent = t('ui.buttons.login');
+        loginForm.registerBtn.textContent = t('ui.buttons.register');
+    loginForm.forgotBtn.textContent = t('ui.buttons.forgot');
+    if (loginForm.googleLabel) loginForm.googleLabel.textContent = t('ui.buttons.google');
+        // Seleciona o locale atual no select
+        if (loginForm.localeSelect) loginForm.localeSelect.value = getLocale();
+    }
+    applyI18nTexts();
+    onLocaleChange(applyI18nTexts);
+    loginForm.localeSelect.addEventListener('change', (e) => setLocale(e.target.value));
 
+    // Mostra o domínio atual para facilitar adicionar nos Domínios autorizados
+    (function showCurrentDomain(){
+        try{
+            const prot = location.protocol.replace(':','');
+            const host = location.host || 'file';
+            const origin = location.origin || `${prot}://${host}`;
+            let tip = `Domínio atual: ${origin}`;
+            if (prot === 'file') {
+                tip += ' — abra o projeto via servidor (npm start) para usar o login do Google.';
+            }
+            if (loginForm.domainHint) loginForm.domainHint.textContent = tip;
+        }catch{}
+    })();
+
+    // Handler do login com Firebase
+    loginForm.loginBtn.addEventListener('click', async () => {
         const email = loginForm.email.value;
         const password = loginForm.password.value;
 
-        if (!email || !password) 
-            return showMessage("Preencha todos os campos!", true);
-
-        loginForm.loginBtn.disabled = true;
-        showMessage("Entrando...");
-
-        const result = await apiLogin(email, password);
-
-        loginForm.loginBtn.disabled = false;
-
-        if (result.status !== "ok") {
-            return showMessage("Erro: " + (result.message || "Falha no login"), true);
+        if (!email || !password) {
+            return showMessage(t('msg.fillAll'), true);
         }
 
-        // salva local
-        const currentUser = {
-            uid: result.uid,
-            email: result.email
-        };
-        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        // Feedback visual: desabilita botão e mostra mensagem de carregamento
+        try {
+            showMessage(t('msg.loggingIn'), false);
+            loginForm.loginBtn.disabled = true;
 
-        // sinaliza ao index.html
-        window.parent.postMessage({ type: "login-success", user: currentUser }, "*");
+            // Tenta fazer login via Firebase wrapper
+            const { userCredential, userData } = await loginUser(email, password);
+            const firebaseUser = userCredential.user;
 
-        showMessage("Login realizado!");
+            showMessage(t('msg.loginSuccess'));
+            const currentUser = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                ...userData
+            };
+            
+            // Salva no localStorage e notifica a página principal
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            console.log('Usuário logado:', currentUser);
+            window.parent.postMessage({ type: 'login-success', user: currentUser }, '*');
+
+        } catch (error) {
+            console.error("Erro de login:", error);
+            const mapped = error?.code === 'auth/wrong-password' || error?.code === 'auth/user-not-found'
+                ? t('msg.emailOrPasswordWrong')
+                : (error?.message || t('msg.network'));
+            showMessage(mapped, true);
+        } finally {
+            loginForm.loginBtn.disabled = false;
+        }
     });
 
-    // REGISTRO via Spring Boot API
-    loginForm.registerBtn.addEventListener("click", async () => {
-
+    // Handler do registro com Firebase
+    loginForm.registerBtn.addEventListener('click', async () => {
         const email = loginForm.email.value;
         const password = loginForm.password.value;
         const type = loginForm.type.value;
 
-        if (!email || !password) 
-            return showMessage("Preencha todos os campos!", true);
+        console.log('Tentando registrar usuário:', { email, type });
 
-        if (password.length < 6)
-            return showMessage("A senha deve ter pelo menos 6 caracteres.", true);
-
-        loginForm.registerBtn.disabled = true;
-        showMessage("Criando conta...");
-
-        const result = await apiRegister(email, password, type);
-
-        loginForm.registerBtn.disabled = false;
-
-        if (result.status !== "created") {
-            return showMessage("Erro: " + (result.message || "Não foi possível registrar"), true);
+        if (!email || !password) {
+            return showMessage(t('msg.fillAll'), true);
         }
 
-        showMessage("Conta criada com sucesso!");
-    });
+        if (password.length < 6) {
+            return showMessage(t('msg.passwordMin'), true);
+        }
 
-    // ESQUECI A SENHA (continua via Firebase)
-    loginForm.forgotBtn.addEventListener("click", async () => {
-        const email = loginForm.email.value;
-        if (!email) return showMessage("Digite seu e-mail!", true);
-
+        // Feedback visual: desabilita botão e mostra mensagem de carregamento
         try {
-            await resetPassword(email);
-            showMessage("E-mail enviado.");
-        } catch (err) {
-            showMessage("Erro: " + err.message, true);
+            showMessage(t('msg.creatingAccount'), false);
+            loginForm.registerBtn.disabled = true;
+
+            console.log('Iniciando registro no Firebase...');
+            // Usa wrapper para registrar
+            const result = await registerUser(email, password, type);
+            console.log('Registro bem sucedido:', result);
+
+            if (result && (result.userCredential || result.user)) {
+                showMessage(t('msg.accountCreated'));
+                // Limpa os campos após sucesso
+                loginForm.email.value = '';
+                loginForm.password.value = '';
+            }
+        } catch (error) {
+            console.error("Erro detalhado de registro:", error);
+
+            // Se o e-mail já existe, tentamos fazer login automaticamente
+            if (error && error.code === 'auth/email-already-in-use') {
+                try {
+                    showMessage(t('msg.emailInUse') + ' ' + t('msg.loggingIn'), false);
+                    const { userCredential, userData } = await loginUser(email, password);
+                    const firebaseUser = userCredential.user;
+                    const currentUser = {
+                        uid: firebaseUser.uid,
+                        email: firebaseUser.email,
+                        ...userData
+                    };
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    window.parent.postMessage({ type: 'login-success', user: currentUser }, '*');
+                    showMessage(t('msg.loginSuccess'));
+                    return;
+                } catch (loginErr) {
+                    console.error('Falha ao logar após detectar e-mail existente:', loginErr);
+                    let msg = t('msg.emailInUse');
+                    if (loginErr && loginErr.code === 'auth/wrong-password') {
+                        msg = t('msg.wrongPassword');
+                    } else if (loginErr && loginErr.code === 'auth/too-many-requests') {
+                        msg = t('msg.tooManyRequests');
+                    }
+                    showMessage(msg, true);
+                    return;
+                }
+            }
+
+            // Demais erros: mapeamento amigável
+            let errorMessage = error?.friendlyMessage || error?.message || t('msg.errorCreatingAccount');
+            switch(error?.code) {
+                case 'auth/invalid-email':
+                    errorMessage = t('msg.invalidEmail'); break;
+                case 'auth/weak-password':
+                    errorMessage = t('msg.weakPassword'); break;
+                case 'auth/network-request-failed':
+                    errorMessage = t('msg.network'); break;
+            }
+            showMessage(errorMessage, true);
+        } finally {
+            loginForm.registerBtn.disabled = false;
         }
     });
 
-</script>
+    // Handler do "Esqueci minha senha"
+    loginForm.forgotBtn.addEventListener('click', async () => {
+        const email = loginForm.email.value;
+        if (!email) {
+            return showMessage(t('msg.reset.missingEmail'), true);
+        }
+        try {
+            showMessage(t('msg.reset.sending'), false);
+            loginForm.forgotBtn.disabled = true;
+            await resetPassword(email);
+            showMessage(t('msg.reset.sentGeneric'));
+        } catch (error) {
+            console.error('Erro no reset de senha:', error);
+            let msg = error?.message || t('msg.reset.couldNotSend');
+            switch (error?.code) {
+                case 'auth/invalid-email':
+                    msg = t('msg.invalidEmail'); break;
+                case 'auth/user-not-found':
+                    msg = t('msg.emailOrPasswordWrong'); break;
+                case 'auth/missing-email':
+                    msg = t('msg.reset.missingEmail'); break;
+                case 'auth/network-request-failed':
+                    msg = t('msg.network'); break;
+            }
+            showMessage(msg, true);
+        } finally {
+            loginForm.forgotBtn.disabled = false;
+        }
+    });
 
+    // Handler do Login com Google
+    loginForm.googleBtn.addEventListener('click', async () => {
+        try {
+            showMessage(t('msg.loggingIn'), false);
+            loginForm.googleBtn.disabled = true;
+            const { userCredential, userData, redirected } = await loginWithGoogle();
+            if (redirected) return; // Fluxo de redirect assume controle da navegação
+            if (!userCredential) return; // segurança
+
+            const firebaseUser = userCredential.user;
+            const currentUser = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                ...userData
+            };
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            window.parent.postMessage({ type: 'login-success', user: currentUser }, '*');
+            showMessage(t('msg.loginSuccess'));
+        } catch (error) {
+            console.error('Erro no login com Google:', error);
+            // Algumas mensagens comuns
+            let msg = t('msg.network');
+            if (error?.code === 'auth/popup-closed-by-user') {
+                msg = 'Popup fechado antes de concluir.';
+            } else if (error?.code === 'auth/unauthorized-domain') {
+                const host = location.host || 'localhost';
+                msg = t('msg.unauthorizedDomain') + ` (domínio: ${host})`;
+            } else if (error?.message) {
+                msg = error.message;
+            }
+            showMessage(msg, true);
+        } finally {
+            loginForm.googleBtn.disabled = false;
+        }
+    });
+  </script>
 </body>
-</html>
+</html>"
+
+app.js, dentro de /assets/js/: "import { auth, logoutUser, fetchProfiles, updateUserData } from './firebase-config.js';
+import { buildCard as deckBuildCard, renderDeck as deckRenderDeck, animateOff as deckAnimateOff } from './deck.js';
+import { updateHeaderDOM, renderMatchesList, showConfirmModal, showToast as uiShowToast } from './ui.js';
+import { mercadoPagoPayments } from './mercadopago-config.js';
+
+/* app.js
+ * WorkSwipe - protótipo de frontend
+ * Comportamentos:
+ * - Modo "Contratar" / "Procurar"
+ * - Swipe com mouse/touch (arrastar cartão)
+ * - Like / Reject / Super (super é premium)
+ * - Simulação de compra premium via localStorage
+ * - Histórico de matches em localStorage
+ */
+
+(() => {
+  // ---------------------------
+  // Handler do botão de logout
+  // ---------------------------
+// Observação: imports movidos para o topo do arquivo (script carregado como module).
+
+
+// Encontre a função de logout existente e substitua por esta:
+async function logout() {
+    try {
+        // Se o Firebase estiver disponível, faça signOut via wrapper
+        try { await logoutUser(); } catch (err) { /* ignore if not configured */ }
+        localStorage.removeItem('currentUser'); // Limpa o usuário do localStorage
+
+    // Redireciona para a página de login (index)
+    window.location.href = 'index.html';
+
+    } catch (error) {
+        console.error("Erro ao fazer logout:", error);
+    }
+}
+
+// Certifique-se de que o botão de logout chama essa nova função.
+// O seu código já faz isso:
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+  // ---------------------------
+  // Dados iniciais (mock)
+  // ---------------------------
+  const seedProfiles = [
+    // Empresas (employer)
+    {
+      id: 'e1',
+      type: 'employer',
+      name: 'Casa do Código',
+      title: 'Desenvolvedor Front-end',
+      area: 'desenvolvimento',
+      location: 'São Paulo',
+      remote: 'yes',
+      bio: 'Equipe ágil, projetos SaaS, React/NextJS.',
+      img: 'https://images.unsplash.com/photo-1581091215367-59ab6b128de4?auto=format&fit=crop&w=800&q=60'
+    },
+    {
+      id: 'e2',
+      type: 'employer',
+      name: 'Agência Aurora',
+      title: 'Designer UI/UX',
+      area: 'design',
+      location: 'Rio de Janeiro',
+      remote: 'no',
+      bio: 'Trabalhos para marcas e e-commerces.',
+      img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=800&q=60'
+    },
+    {
+      id: 'e3',
+      type: 'employer',
+      name: 'SalesPro',
+      title: 'Especialista em Vendas',
+      area: 'vendas',
+      location: 'Remoto',
+      remote: 'yes',
+      bio: 'Time comercial focado em B2B.',
+      img: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=800&q=60'
+    },
+
+    // Candidatos (candidate)
+    {
+      id: 'c1',
+      type: 'candidate',
+      name: 'Pedro Silva',
+      title: 'Fullstack Developer',
+      area: 'desenvolvimento',
+      location: 'São Paulo',
+      remote: 'yes',
+      bio: 'Node.js, React, AWS. 5 anos de experiência.',
+      img: 'https://randomuser.me/api/portraits/men/75.jpg'
+    },
+    {
+      id: 'c2',
+      type: 'candidate',
+      name: 'Ana Souza',
+      title: 'Product Designer',
+      area: 'design',
+      location: 'Belo Horizonte',
+      remote: 'no',
+      bio: 'Foco em design centrado no usuário.',
+      img: 'https://randomuser.me/api/portraits/women/68.jpg'
+    },
+    {
+      id: 'c3',
+      type: 'candidate',
+      name: 'Lucas Oliveira',
+      title: 'Analista de Marketing',
+      area: 'marketing',
+      location: 'Fortaleza',
+      remote: 'yes',
+      bio: 'Marketing digital e performance.',
+      img: 'https://randomuser.me/api/portraits/men/51.jpg'
+    }
+  ];
+
+  // ---------------------------
+  // Elementos DOM
+  // ---------------------------
+  const modeToggle = document.getElementById('modeToggle');
+  const modeLabel = document.getElementById('modeLabel');
+  // fallback: the HTML uses a .container.cards area for the simple UI
+  const cardDeck = document.getElementById('cardDeck') || document.querySelector('.container.cards');
+  const btnLike = document.getElementById('btnLike') || document.getElementById('likeBtn');
+  const btnReject = document.getElementById('btnReject') || document.getElementById('dislikeBtn');
+  const btnBio = document.getElementById('btnBio');
+  const btnSuper = document.getElementById('btnSuper');
+  const openPremium = document.getElementById('openPremium');
+  const modalPremium = document.getElementById('modalPremium');
+  const closePremium = document.getElementById('closePremium');
+  const buys = document.querySelectorAll('.buy') || [];
+  const statViews = document.getElementById('statViews');
+  const statLikes = document.getElementById('statLikes');
+  const statPremium = document.getElementById('statPremium');
+  const matchesList = document.getElementById('matchesList');
+
+  const userNameInput = document.getElementById('userName');
+  const userRoleSelect = document.getElementById('userRole');
+  const saveProfile = document.getElementById('saveProfile') || document.getElementById('saveProfile');
+  const userAvatar = document.getElementById('userAvatar');
+
+  const filterLocation = document.getElementById('filterLocation');
+  const filterArea = document.getElementById('filterArea');
+  const filterRemote = document.getElementById('filterRemote');
+  const applyFilters = document.getElementById('applyFilters');
+  const clearFilters = document.getElementById('clearFilters');
+
+  // confirm modal elements
+  const modalConfirm = document.getElementById('modalConfirm');
+  const confirmTitle = document.getElementById('confirmTitle');
+  const confirmBody = document.getElementById('confirmBody');
+  const confirmYes = document.getElementById('confirmYes');
+  const confirmNo = document.getElementById('confirmNo');
+
+  // ---------------------------
+  // Estado
+  // ---------------------------
+  let mode = localStorage.getItem('ws_mode') || 'employer'; // default: Contratar (ver candidatos) => employer sees candidates
+  // mapping: mode 'employer' means user is contratante (looking for candidates)
+  // mode 'candidate' means user is candidat@ (looking for vagas/empresas)
+  let profiles = JSON.parse(localStorage.getItem('ws_profiles')) || [];
+  let deck = []; // perfis filtrados atualmente
+  let topCard = null;
+  let premium = JSON.parse(localStorage.getItem('ws_premium')) || false;
+  
+  // Função para verificar status premium via MercadoPago
+  function checkPremiumStatus() {
+    try {
+      // Verificar se o MercadoPago está inicializado antes de usar
+      if (mercadoPagoPayments && mercadoPagoPayments.initialized) {
+        return mercadoPagoPayments.isPremiumActive();
+      } else {
+        // Se não estiver inicializado, usar o sistema local
+        return premium;
+      }
+    } catch (error) {
+      console.error('Erro ao verificar premium:', error);
+      return premium; // fallback para o sistema antigo
+    }
+  }
+  let stat = JSON.parse(localStorage.getItem('ws_stat')) || { views: 0, likes: 0 };
+  let matches = JSON.parse(localStorage.getItem('ws_matches')) || [];
+
+  // ---------------------------
+  // Utils
+  // ---------------------------
+  function saveState(){
+    localStorage.setItem('ws_profiles', JSON.stringify(profiles));
+    localStorage.setItem('ws_premium', JSON.stringify(premium));
+    localStorage.setItem('ws_stat', JSON.stringify(stat));
+    localStorage.setItem('ws_matches', JSON.stringify(matches));
+    localStorage.setItem('ws_mode', mode);
+  }
+
+  function randomColorSeed(name){
+    // Generate deterministic pastel bg by name
+    let h = 0;
+    for (let i=0;i<name.length;i++) h = (h*31 + name.charCodeAt(i)) % 360;
+    return `linear-gradient(135deg,hsl(${h}deg 60% 60%), hsl(${(h+40)%360}deg 60% 50%))`;
+  }
+
+  // ---------------------------
+  // UI Rendering (delegado a ui.js e deck.js)
+  // ---------------------------
+  function updateHeader(){
+    // Atualizar status premium
+    premium = checkPremiumStatus();
+    updateHeaderDOM({modeLabel, statViews, statLikes, statPremium}, {mode, stat, premium});
+  }
+
+  function renderMatches(){
+    renderMatchesList(matchesList, matches);
+  }
+
+  function renderDeck(){
+    // deckBuildCard espera (profile, randomColorSeed)
+    const wrapperBuildCard = (p) => {
+      const c = deckBuildCard(p, randomColorSeed);
+      // Botão 'Ver bio' dentro do card
+      try{
+        const info = c.querySelector('.info');
+        if(info){
+          const btnBio = document.createElement('button');
+          btnBio.className = 'btn small';
+          btnBio.textContent = 'Ver bio';
+          btnBio.addEventListener('click', (e)=>{ e.stopPropagation(); openBio(p); });
+          info.appendChild(btnBio);
+        }
+        // Atalho: abrir bio com duplo clique no card
+        c.addEventListener('dblclick', (e)=>{ e.stopPropagation(); openBio(p); });
+      } catch {}
+      return c;
+    };
+    topCard = deckRenderDeck(cardDeck, deck, makeCardDraggable, wrapperBuildCard);
+  }
+
+  function buildDeckFromProfiles(){
+    const targetType = mode === 'employer' ? 'candidate' : 'employer';
+    const loc = filterLocation ? filterLocation.value.trim().toLowerCase() : '';
+    const area = filterArea ? filterArea.value : '';
+    const remote = filterRemote ? filterRemote.value : '';
+
+    deck = profiles.filter(p => p.type === targetType)
+      .filter(p => {
+        if(loc && !p.location.toLowerCase().includes(loc)) return false;
+        if(area && area !== '' && p.area !== area) return false;
+        if(remote && remote !== '' && p.remote !== remote) return false;
+        return true;
+      });
+
+    // shuffle deck slightly
+    deck = deck.sort(() => Math.random() - 0.5);
+    stat.views += deck.length;
+    updateHeader();
+    saveState();
+    renderDeck();
+  }
+
+  // ---------------------------
+  // Login system (added)
+  // ---------------------------
+  // Login agora é gerenciado pelo iframe `login.html` e pelos helpers Firebase (registerUser/loginUser/getUserData).
+  // O fallback local (login via localStorage) foi removido para evitar duplicação.
+
+  // ---------------------------
+  // Interações do cartão (arrastar)
+  // ---------------------------
+  function makeCardDraggable(card){
+    let pointerId = null;
+    let startX = 0, startY = 0;
+    let currentX = 0, currentY = 0;
+    let isDragging = false;
+
+    const onPointerDown = (e) => {
+      e.preventDefault();
+      pointerId = e.pointerId;
+      (e.target).setPointerCapture(pointerId);
+      startX = e.clientX;
+      startY = e.clientY;
+      isDragging = true;
+      card.style.transition = 'none';
+    };
+
+    const onPointerMove = (e) => {
+      if(!isDragging || e.pointerId !== pointerId) return;
+      currentX = e.clientX - startX;
+      currentY = e.clientY - startY;
+      const rot = Math.min(25, Math.max(-25, currentX / 12));
+      card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rot}deg)`;
+      // visual cue: change opacity
+      const opacity = Math.min(1, Math.abs(currentX) / 200);
+      card.style.opacity = 1 - Math.min(0.2, opacity * 0.2);
+    };
+
+    const onPointerUp = (e) => {
+      if(e.pointerId !== pointerId) return;
+      isDragging = false;
+      (e.target).releasePointerCapture(pointerId);
+      card.style.transition = 'transform 250ms cubic-bezier(.2,.9,.3,1), opacity 200ms';
+      // decide final position
+      const threshold = 120;
+      const dx = currentX;
+      if(dx > threshold){
+        // like
+        animateOff(card, 1);
+        handleLike(card.dataset.id, false);
+      } else if(dx < -threshold){
+        // reject
+        animateOff(card, -1);
+        // no further action for reject
+      } else {
+        card.style.transform = '';
+        card.style.opacity = 1;
+      }
+      // reset
+      pointerId = null;
+      startX = startY = currentX = currentY = 0;
+    };
+
+    card.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+  }
+
+  function animateOff(card, dir){
+    // delegate animation and removal to deck module
+    deckAnimateOff(card, dir, (id) => {
+      deck = deck.filter(d => d.id !== id);
+      renderDeck();
+    });
+  }
+
+  // ---------------------------
+  // Bio Overlay
+  // ---------------------------
+  const bioOverlay = document.getElementById('bioOverlay');
+  const bioClose = document.getElementById('bioClose');
+  const bioName = document.getElementById('bioName');
+  const bioTitleEl = document.getElementById('bioTitle');
+  const bioImage = document.getElementById('bioImage');
+  const bioText = document.getElementById('bioText');
+  const bioMeta = document.getElementById('bioMeta');
+
+  function openBio(profile){
+    if(!bioOverlay) return;
+    if(bioName) bioName.textContent = profile.name || '';
+    if(bioTitleEl) bioTitleEl.textContent = profile.title ? profile.title : (profile.area || '');
+    if(bioImage){
+      if(profile.img){
+        bioImage.src = profile.img;
+      } else {
+        // cria um canvas/padrão simples ou deixa sem src
+        bioImage.removeAttribute('src');
+        bioImage.style.background = randomColorSeed(profile.name || 'perfil');
+        bioImage.style.height = '280px';
+      }
+    }
+    if(bioText) bioText.textContent = profile.bio || '';
+    if(bioMeta){
+      bioMeta.innerHTML = '';
+      const items = [
+        profile.type === 'employer' ? 'Empresa' : 'Candidato',
+        profile.location,
+        profile.area,
+        profile.remote === 'yes' ? 'Remoto' : (profile.remote === 'no' ? 'Presencial' : '')
+      ].filter(Boolean);
+      items.forEach(t => {
+        const span = document.createElement('span');
+        span.className = 'tag';
+        span.textContent = t;
+        bioMeta.appendChild(span);
+      });
+    }
+    bioOverlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeBio(){
+    if(!bioOverlay) return;
+    bioOverlay.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+  if(bioClose) bioClose.addEventListener('click', closeBio);
+  if(bioOverlay) bioOverlay.addEventListener('click', (e)=>{
+    if(e.target === bioOverlay) closeBio();
+  });
+
+  // ---------------------------
+  // Ações: curtir, super, rejeitar
+  // ---------------------------
+  function getProfileById(id){
+    return profiles.find(p => p.id === id) || null;
+  }
+
+// Em app.js
+async function handleLike(id, isSuper) {
+  const profile = getProfileById(id);
+  if(!profile) return;
+
+  stat.likes++;
+  const newMatch = { id: profile.id, name: profile.name, title: profile.title, time: Date.now(), super: !!isSuper };
+  matches.push(newMatch);
+
+  // --- IMPLEMENTAÇÃO AQUI ---
+  // Em vez de saveState(), atualize o Firestore
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser && currentUser.uid) {
+      await updateUserData(currentUser.uid, {
+        matches: matches, // Envia a lista inteira de matches
+        stats: stat       // Envia as estatísticas
+      });
+    }
+  } catch (error) {
+    console.error("Erro ao salvar match no Firestore:", error);
+    uiShowToast("Erro ao salvar seu match.", true);
+  }
+  // saveState(); // Você pode remover ou manter isso para fallback offline
+
+  updateHeader();
+  renderMatches();
+
+  const card = cardDeck.querySelector(`.card[data-id="${id}"]`);
+  if(card) animateOff(card, 1);
+  uiShowToast(`Você curtiu ${profile.name}` + (isSuper ? ' (SUPER)!' : ''));
+}
+
+  // ---------------------------
+  // Botões
+  // ---------------------------
+  if (btnLike) {
+    btnLike.addEventListener('click', () => {
+      const top = cardDeck && cardDeck.querySelector ? cardDeck.querySelector('.card:last-child') : null;
+  if(!top) { uiShowToast('Sem perfis por enquanto'); return; }
+      handleLike(top.dataset.id, false);
+    });
+  }
+
+  if (btnReject) {
+    btnReject.addEventListener('click', () => {
+      const top = cardDeck && cardDeck.querySelector ? cardDeck.querySelector('.card:last-child') : null;
+      if(!top) { uiShowToast('Sem perfis por enquanto'); return; }
+      animateOff(top, -1);
+    });
+  }
+
+  if (btnBio) {
+    btnBio.addEventListener('click', () => {
+      const top = cardDeck && cardDeck.querySelector ? cardDeck.querySelector('.card:last-child') : null;
+      if(!top) { uiShowToast('Sem perfis por enquanto'); return; }
+      const profile = getProfileById(top.dataset.id);
+      if(profile) openBio(profile);
+    });
+  }
+
+  if (btnSuper) {
+    btnSuper.addEventListener('click', () => {
+      const isPremium = checkPremiumStatus();
+      if(!isPremium){
+        showConfirmModal(modalConfirm, confirmTitle, confirmBody, confirmYes, confirmNo, 'Recurso Premium', 'Super Like é um recurso premium. Quer adquirir o Premium?', () => {
+          window.location.href = 'premium.html';
+        });
+        return;
+      }
+      const top = cardDeck && cardDeck.querySelector ? cardDeck.querySelector('.card:last-child') : null;
+      if(!top) { uiShowToast('Sem perfis por enquanto'); return; }
+      handleLike(top.dataset.id, true);
+    });
+  }
+
+  // ---------------------------
+  // Alternar modo
+  // ---------------------------
+  if (modeToggle) modeToggle.addEventListener('click', () => {
+    // toggle user mode
+    mode = mode === 'employer' ? 'candidate' : 'employer';
+    localStorage.setItem('ws_mode', mode);
+    buildDeckFromProfiles();
+    updateHeader();
+    uiShowToast('Modo alterado: ' + (mode === 'employer' ? 'Contratar' : 'Procurar'));
+  });
+
+  // ---------------------------
+  // Premium - Redirecionar para página de planos
+  // ---------------------------
+  if (openPremium) openPremium.addEventListener('click', () => {
+    window.location.href = 'premium.html';
+  });
+
+  if (buys && buys.length) buys.forEach(b => {
+    b.addEventListener('click', () => {
+      const plan = b.dataset.plan;
+      // simulate payment flow — here apenas confirm
+          showConfirmModal(modalConfirm, confirmTitle, confirmBody, confirmYes, confirmNo, 'Comprar Premium', `Deseja comprar o plano ${plan}?`, () => {
+        // simulate success
+        premium = true;
+        saveState();
+        updateHeader();
+        if (modalPremium) modalPremium.classList.add('hidden');
+            uiShowToast('Compra realizada! Premium ativado. ✨');
+      });
+    });
+  });
+
+  // ---------------------------
+  // Profile setup
+  // ---------------------------
+  if (saveProfile) saveProfile.addEventListener('click', () => {
+    const name = userNameInput.value.trim();
+    const role = userRoleSelect.value; // candidate or employer
+    if(!name){
+      uiShowToast('Digite um nome para seu perfil');
+      return;
+    }
+    // create or update a pseudo-user profile in local storage (not used in matching logic for now)
+    localStorage.setItem('ws_user', JSON.stringify({ name, role }));
+    userAvatar.style.background = randomColorSeed(name);
+    uiShowToast('Perfil salvo: ' + name);
+  });
+
+  // ---------------------------
+  // Filters
+  // ---------------------------
+  if (applyFilters) applyFilters.addEventListener('click', () => {
+    buildDeckFromProfiles();
+  });
+  if (clearFilters) clearFilters.addEventListener('click', () => {
+    if (filterLocation) filterLocation.value = '';
+    if (filterArea) filterArea.value = '';
+    if (filterRemote) filterRemote.value = '';
+    buildDeckFromProfiles();
+  });
+
+  // showConfirm/showToast foram movidos para `ui.js` (showConfirmModal / uiShowToast)
+
+  // ---------------------------
+  // Inicialização
+  // ---------------------------
+  async function init(){
+    // --- IMPLEMENTAÇÃO AQUI ---
+    // Tenta carregar perfis do Firestore; se falhar, usa os dados mockados
+    try{
+      const fetched = await fetchProfiles();
+      if(Array.isArray(fetched) && fetched.length > 0){
+        profiles = fetched;
+      } else if(!profiles || profiles.length === 0){
+        profiles = seedProfiles.slice(); // Fallback para os mocks
+      }
+    } catch(err){
+      console.warn('Não foi possível buscar perfis do Firestore, usando mocks.', err);
+      if(!profiles || profiles.length === 0) profiles = seedProfiles.slice();
+    }
+
+    // Carrega dados do perfil local (UI)
+    const user = JSON.parse(localStorage.getItem('ws_user') || 'null');
+    if(user){
+      userNameInput.value = user.name || '';
+      userRoleSelect.value = user.role === 'employer' ? 'employer' : 'candidate';
+      userAvatar.style.background = randomColorSeed(user.name || 'user');
+    } else {
+      userAvatar.style.background = randomColorSeed('Seu perfil');
+    }
+
+    // Atualiza cabeçalho, matches e monta o deck
+    updateHeader();
+    renderMatches();
+    buildDeckFromProfiles();
+  }
+
+  // Atalhos de teclado para testes
+  window.addEventListener('keydown', (e) => {
+    if(e.key === 'ArrowRight') btnLike.click();
+    if(e.key === 'ArrowLeft') btnReject.click();
+    if(e.key === 's') btnSuper.click();
+    if(e.key === 'm') modeToggle.click();
+    if(e.key.toLowerCase && e.key.toLowerCase() === 'b' && btnBio) btnBio.click();
+  });
+
+  // Em app.js, no final do arquivo, antes de init()
+window.addEventListener('userLoggedIn', (event) => {
+  const userData = event.detail;
+  console.log('Usuário logado, carregando dados do Firestore:', userData);
+
+  // Atualiza o estado do app com os dados do Firestore
+  matches = userData.matches || [];
+  stat = userData.stats || { views: 0, likes: 0 };
+  premium = userData.premium || false;
+  mode = userData.mode || 'employer';
+
+  // ... salva no localStorage para consistência ...
+
+  // Re-renderiza a UI com os dados corretos
+  init();
+});
+
+// Inicialização quando a página é aberta direto (main.html)
+try {
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+  if (currentUser) {
+    matches = currentUser.matches || [];
+    stat = currentUser.stats || { views: 0, likes: 0 };
+    premium = currentUser.premium || false;
+    mode = currentUser.mode || 'employer';
+  }
+} catch {}
+// Garante inicialização do app mesmo sem evento de login (usa mocks/firestore)
+document.addEventListener('DOMContentLoaded', () => init());
+})();
